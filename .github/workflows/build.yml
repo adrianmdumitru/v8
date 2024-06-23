@@ -42,7 +42,8 @@ jobs:
             export PATH=${{ env.DEPOT_TOOLS_PATH }}:$PATH
 
       - name: Fetch v8
-        run: | 
+        run: |
+          export PATH=${{ env.DEPOT_TOOLS_PATH }}:$PATH
           fetch v8
           cd v8
           git checkout 12.8.125
