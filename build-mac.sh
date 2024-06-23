@@ -2,6 +2,8 @@
 
 set -e
 
+cd v8
+
 # Check if the number of arguments is 1
 if [ $# -ne 1 ]; then
     echo "Usage: $0 <architecture>"
@@ -43,6 +45,6 @@ v8_enable_webassembly=true
 use_cxx17=true
 v8_enable_sandbox=false"
 
-gn gen v8/out/mac --args="${ARGS}"
+gn gen out/mac --args="${ARGS}"
 
-ninja -C v8/out/mac v8_monolith d8 -v
+ninja -C out/mac v8_monolith d8 -v
