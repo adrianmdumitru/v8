@@ -39,12 +39,7 @@ jobs:
             git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
             echo "DEPOT_TOOLS_PATH=$DEPOT_TOOLS_PATH" >> $GITHUB_ENV
             echo "DEPOT_TOOLS_PATH=$DEPOT_TOOLS_PATH"
-
-      - name: Print env
-        run: |
-          echo "${{ env.DEPOT_TOOLS_PATH }}"
-          ls -l ${{ env.DEPOT_TOOLS_PATH }}
-          xcrun clang++ -v
+            export PATH=${{ env.DEPOT_TOOLS_PATH }}:$PATH
 
       - name: Fetch v8
         run: | 
