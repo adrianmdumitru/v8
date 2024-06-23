@@ -43,6 +43,6 @@ v8_enable_webassembly=true
 use_cxx17=true
 v8_enable_sandbox=false"
 
-gn gen out/mac --args="${ARGS}"
+gn gen v8/out/mac --args="${ARGS}"
 
-ninja -C out/mac v8_monolith d8 -v
+ninja -C v8/out/mac v8_monolith d8 -v

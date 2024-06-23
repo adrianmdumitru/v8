@@ -1,0 +1,108 @@
+diff --git a/include/v8-isolate.h b/include/v8-isolate.h
+index ff4cfaad1c6..7de5eedc356 100644
+--- a/include/v8-isolate.h
++++ b/include/v8-isolate.h
+@@ -1628,6 +1628,12 @@ class V8_EXPORT Isolate {
+   V8_DEPRECATED("Will be removed without replacement. crbug.com/v8/14172")
+   void VisitExternalResources(ExternalResourceVisitor* visitor);
+ 
++  /**
++   * Iterates through all the persistent handles in the current isolate's heap
++   * that have class_ids.
++   */
++  void VisitHandlesWithClassIds(PersistentHandleVisitor* visitor);
++
+   /**
+    * Check if this isolate is in use.
+    * True if at least one thread Enter'ed this isolate.
+diff --git a/include/v8config.h b/include/v8config.h
+index 707ec23c9c6..c33d2a1efeb 100644
+--- a/include/v8config.h
++++ b/include/v8config.h
+@@ -515,7 +515,7 @@ path. Add it with -I<path> to the command line
+   std::assume_aligned<(alignment)>(ptr)
+ #elif V8_HAS_BUILTIN_ASSUME_ALIGNED
+ # define V8_ASSUME_ALIGNED(ptr, alignment) \
+-  __builtin_assume_aligned((ptr), (alignment))
++  (ptr)
+ #else
+ # define V8_ASSUME_ALIGNED(ptr, alignment) (ptr)
+ #endif
+diff --git a/src/api/api.cc b/src/api/api.cc
+index d9cbd0ae0fe..af4672a17f0 100644
+--- a/src/api/api.cc
++++ b/src/api/api.cc
+@@ -10612,6 +10612,12 @@ bool Isolate::IsInUse() {
+   return i_isolate->IsInUse();
+ }
+ 
++void Isolate::VisitHandlesWithClassIds(PersistentHandleVisitor* visitor) {
++  i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(this);
++  i::DisallowGarbageCollection no_gc;
++  i_isolate->global_handles()->IterateAllRootsWithClassIds(visitor);
++}
++
+ void Isolate::SetAllowAtomicsWait(bool allow) {
+   i::Isolate* i_isolate = reinterpret_cast<i::Isolate*>(this);
+   i_isolate->set_allow_atomics_wait(allow);
+diff --git a/src/base/macros.h b/src/base/macros.h
+index e7f4227e7cf..41ed2bd69c4 100644
+--- a/src/base/macros.h
++++ b/src/base/macros.h
+@@ -401,9 +401,9 @@ bool is_inbounds(float_t v) {
+ // Setup for Windows shared library export.
+ #define V8_EXPORT_ENUM
+ #ifdef BUILDING_V8_SHARED_PRIVATE
+-#define V8_EXPORT_PRIVATE __declspec(dllexport)
++#define V8_EXPORT_PRIVATE //__declspec(dllexport)
+ #elif USING_V8_SHARED_PRIVATE
+-#define V8_EXPORT_PRIVATE __declspec(dllimport)
++#define V8_EXPORT_PRIVATE //__declspec(dllimport)
+ #else
+ #define V8_EXPORT_PRIVATE
+ #endif  // BUILDING_V8_SHARED
+diff --git a/src/handles/global-handles.cc b/src/handles/global-handles.cc
+index 1d046648dc1..fdadf9a6189 100644
+--- a/src/handles/global-handles.cc
++++ b/src/handles/global-handles.cc
+@@ -945,10 +945,10 @@ void GlobalHandles::ApplyPersistentHandleVisitor(
+       node->wrapper_class_id());
+ }
+ 
+-void GlobalHandles::IterateAllRootsForTesting(
++void GlobalHandles::IterateAllRootsWithClassIds(
+     v8::PersistentHandleVisitor* visitor) {
+   for (Node* node : *regular_nodes_) {
+-    if (node->IsWeakOrStrongRetainer()) {
++    if (node->IsWeakOrStrongRetainer() && node->has_wrapper_class_id()) {
+       ApplyPersistentHandleVisitor(visitor, node);
+     }
+   }
+diff --git a/src/handles/global-handles.h b/src/handles/global-handles.h
+index 17c22e146b5..0d39b639661 100644
+--- a/src/handles/global-handles.h
++++ b/src/handles/global-handles.h
+@@ -123,7 +123,7 @@ class V8_EXPORT_PRIVATE GlobalHandles final {
+   size_t handles_count() const;
+   size_t last_gc_custom_callbacks() const { return last_gc_custom_callbacks_; }
+ 
+-  void IterateAllRootsForTesting(v8::PersistentHandleVisitor* v);
++  void IterateAllRootsWithClassIds(v8::PersistentHandleVisitor* v);
+ 
+ #ifdef DEBUG
+   void PrintStats();
+diff --git a/test/cctest/test-heap-profiler.cc b/test/cctest/test-heap-profiler.cc
+index ae18c685348..1ef80819819 100644
+--- a/test/cctest/test-heap-profiler.cc
++++ b/test/cctest/test-heap-profiler.cc
+@@ -1635,7 +1635,7 @@ class EmbedderGraphBuilder : public v8::PersistentHandleVisitor {
+     EmbedderGraphBuilder builder(isolate, graph);
+     reinterpret_cast<i::Isolate*>(isolate)
+         ->global_handles()
+-        ->IterateAllRootsForTesting(&builder);
++        ->IterateAllRootsWithClassIds(&builder);
+   }
+ 
+   void VisitPersistentHandle(v8::Persistent<v8::Value>* value,
+
+

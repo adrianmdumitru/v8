@@ -64,6 +64,15 @@ jobs:
           mkdir -p ${CURRENT_DIR}/third_party/ninja
           ln -s ${NINJA_PATH} ${CURRENT_DIR}/third_party/ninja/ninja
 
+      - name: Fetch v8
+        run: | 
+          fetch v8
+          cd v8
+          git checkout 12.8.125
+          gclient sync
+          git apply ../cc.patch
+          cd ../
+
       - name: Build ${{ matrix.arch }}
         run: |
           export PATH=${{ env.DEPOT_TOOLS_PATH }}:$PATH
@@ -76,11 +85,11 @@ jobs:
         run: |
           ls -l ./out/mac
           echo "---------------------"
-          ls -l ./out/mac/obj
+          ls -l ./v8/out/mac/obj
           mkdir dist
-          cp ./out/mac/d8 ./dist/
-          cp ./out/mac/obj/libv8_monolith.a ./dist/
-          cp -r ./include ./dist/
+          cp ./v8/out/mac/d8 ./dist/
+          cp ./v8/out/mac/obj/libv8_monolith.a ./dist/
+          cp -r ./v8/include ./dist/
 
       - name: Upload artifact
         uses: actions/upload-artifact@v3
