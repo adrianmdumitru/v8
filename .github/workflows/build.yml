@@ -46,11 +46,6 @@ jobs:
           ls -l ${{ env.DEPOT_TOOLS_PATH }}
           xcrun clang++ -v
 
-      - name: Install gn
-        run: |
-          wget https://chrome-infra-packages.appspot.com/dl/gn/gn/mac-amd64/+/latest -O ./gn.zip
-          unzip gn.zip -d buildtools/mac/
-
       - name: Install dsymutil
         run: |
           export PATH=${{ env.DEPOT_TOOLS_PATH }}:$PATH
