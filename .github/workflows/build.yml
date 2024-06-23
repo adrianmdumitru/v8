@@ -46,19 +46,6 @@ jobs:
           ls -l ${{ env.DEPOT_TOOLS_PATH }}
           xcrun clang++ -v
 
-      - name: Install dsymutil
-        run: |
-          export PATH=${{ env.DEPOT_TOOLS_PATH }}:$PATH
-          python3 ${{ env.DEPOT_TOOLS_PATH }}/download_from_google_storage.py --no_resume --no_auth --bucket chromium-browser-clang -s tools/clang/dsymutil/bin/dsymutil.x64.sha1 -o tools/clang/dsymutil/bin/dsymutil
-
-      - name: Install ninja
-        run: |
-          brew install ninja
-          NINJA_PATH=$(which ninja)
-          CURRENT_DIR=$(pwd)
-          mkdir -p ${CURRENT_DIR}/third_party/ninja
-          ln -s ${NINJA_PATH} ${CURRENT_DIR}/third_party/ninja/ninja
-
       - name: Fetch v8
         run: | 
           fetch v8
