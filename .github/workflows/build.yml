@@ -39,7 +39,6 @@ jobs:
             git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
             echo "DEPOT_TOOLS_PATH=$DEPOT_TOOLS_PATH" >> $GITHUB_ENV
             echo "DEPOT_TOOLS_PATH=$DEPOT_TOOLS_PATH"
-            export PATH=${{ env.DEPOT_TOOLS_PATH }}:$PATH
 
       - name: Fetch v8
         run: |
@@ -455,7 +454,7 @@ jobs:
         build_type: [debug, release]
 
     name: "Windows"
-    runs-on: windows-2019
+    runs-on: windows-2022
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -485,32 +484,26 @@ jobs:
             cd /c
             git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
             ls -l /c/depot_tools
+            DEPOT_TOOLS_PATH=/c/depot_tools
+            echo "DEPOT_TOOLS_PATH=$DEPOT_TOOLS_PATH" >> $GITHUB_ENV
+            echo "DEPOT_TOOLS_PATH=$DEPOT_TOOLS_PATH"
 
-      - name: Install gn
+      - name: Fetch v8
         run: |
-          Invoke-WebRequest -OutFile gn.zip https://chrome-infra-packages.appspot.com/dl/gn/gn/windows-amd64/+/latest
-          Expand-Archive gn.zip -DestinationPath buildtools\win\
-
-      - name: Setup Ninja
-        uses: ashutoshvarma/setup-ninja@66ad2db9ed7d211c065daeeb849e9c8c895773c9
-        with:
-          version: 1.10.0
-
-      - name: Install ninja
-        shell: bash
-        run: |
-          which ninja
-          NINJA_PATH=$(which ninja)
-          CURRENT_DIR=$(pwd)
-          mkdir -p ${CURRENT_DIR}/third_party/ninja
-          cp ${NINJA_PATH} ${CURRENT_DIR}/third_party/ninja/
+          export PATH=${{ env.DEPOT_TOOLS_PATH }}:$PATH
+          fetch v8
+          cd v8
+          git checkout 12.8.125
+          gclient sync
+          git apply ../cc.patch
+          cd ../
 
       - name: GN gen ${{ matrix.arch }}
         shell: cmd
         run: |
           dir C:\depot_tools          
           set DEPOT_TOOLS_WIN_TOOLCHAIN=0
-          set PATH=C:\depot_tools;%PATH%
+          export PATH=${{ env.DEPOT_TOOLS_PATH }}:$PATH
           set ARGS="is_clang=false is_debug=${{ env.IS_DEBUG }} target_cpu=""${{ matrix.arch }}"" v8_target_cpu=""${{ matrix.arch }}"" use_thin_lto=false use_lld=false clang_use_chrome_plugins=false chrome_pgo_phase=0 is_component_build=true use_custom_libcxx=false v8_use_external_startup_data=false is_official_build=false v8_enable_i18n_support=false treat_warnings_as_errors=false symbol_level=0 v8_enable_webassembly=true use_cxx17=true v8_enable_sandbox=false"
           gn gen out/windows --args=%ARGS%
 
